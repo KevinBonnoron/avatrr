@@ -1,0 +1,54 @@
+{
+  "$schema": "./config.schema.json",
+  "llm": [
+    // Ollama (local): requires Ollama running at the given URL
+    {
+      "name": "ollama",
+      "type": "ollama",
+      "options": { "url": "http://localhost:11434", "model": "llama3.1", "maxTokens": 512 }
+    }
+    // OpenAI: set apiKey here or via OPENAI_API_KEY env var
+    // { "name": "openai", "type": "openai", "options": { "apiKey": "sk-...", "model": "gpt-4o-mini", "maxTokens": 512 } }
+    // OpenAI-compatible (LM Studio, vLLM, etc.): set url to point to the local server
+    // { "name": "local", "type": "openai", "options": { "url": "http://localhost:1234/v1", "model": "my-model", "maxTokens": 512 } }
+    // Anthropic: set apiKey here or via ANTHROPIC_API_KEY env var
+    // { "name": "anthropic", "type": "anthropic", "options": { "apiKey": "sk-ant-...", "model": "claude-sonnet-4-6", "maxTokens": 512 } }
+    // Local Transformers.js model (runs in-process, no external service needed)
+    // { "name": "local", "type": "local", "options": { "model": "onnx-community/Llama-3.2-1B-Instruct", "maxTokens": 512 } }
+  ],
+  "tts": [
+    // OpenAI TTS: set apiKey here or via OPENAI_API_KEY env var
+    // { "name": "openai-tts", "type": "openai", "options": { "apiKey": "sk-...", "voice": "alloy" } }
+    // ElevenLabs: set apiKey here or via ELEVENLABS_API_KEY env var
+    // { "name": "elevenlabs", "type": "elevenlabs", "options": { "apiKey": "xi-...", "voice": "Rachel" } }
+    // Local Transformers.js TTS (runs in-process)
+    // { "name": "local-tts", "type": "local", "options": { "model": "Xenova/speecht5_tts" } }
+    // Sirene: multi-backend TTS gateway (Kokoro, Piper, F5-TTS, etc.)
+    // { "name": "sirene", "type": "sirene", "options": { "baseUrl": "http://localhost:3000", "voice": "my-voice-id" } }
+  ],
+  "expressions": {
+    "valid": ["neutral", "happy", "sad", "angry", "surprised"],
+    "emotionMapping": { "smile": "happy", "blush": "happy" }
+  },
+  "animations": [
+    { "id": "standard", "url": "/data/animations/standard.vrma", "label": "Standard" },
+    { "id": "appearing", "url": "/data/animations/appearing.vrma", "label": "Appearing" }
+  ],
+  "avatars": [
+    {
+      "id": "example",
+      "name": "Example Avatar",
+      "outfits": [
+        { "id": "default", "label": "Default", "modelPath": "/models/example.vrm", "default": true }
+      ],
+      "animations": {
+        "available": ["standard", "appearing"],
+        "idle": "standard",
+        "appearing": "appearing"
+      },
+      "llm": { "ref": "ollama" },
+      "tts": { "ref": "openai-tts", "overrides": { "voice": "alloy" } }
+    }
+  ],
+  "memory": { "dbPath": "./data/memory.sqlite", "embeddingModel": "nomic-embed-text", "topK": 5 }
+}

@@ -1,0 +1,22 @@
+{
+  "$schema": "./server/config.schema.json",
+  // Local GGUF model via node-llama-cpp — no external service needed.
+  // Downloads from HuggingFace automatically on first use.
+  "llm": [
+    {
+      "name": "local",
+      "type": "local",
+      "options": {
+        "model": "hf:bartowski/Llama-3.2-3B-Instruct-GGUF/Llama-3.2-3B-Instruct-Q4_K_M.gguf",
+        "maxTokens": 512,
+        "gpuLayers": "auto"
+      }
+    }
+  ],
+  // Add animations here (VRMA files in data/animations/).
+  // See server/config.example.jsonc for a full example.
+  "animations": [],
+  // Add avatars here (VRM models in data/models/).
+  // See server/config.example.jsonc for a full example.
+  "avatars": []
+}

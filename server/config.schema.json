@@ -1,0 +1,391 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://avatrr.local/config.schema.json",
+  "title": "Avatar config",
+  "description": "Config file for avatars and animations.",
+  "type": "object",
+  "required": ["animations", "avatars"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Optional path or URI to this schema for editor validation (e.g. ./config.schema.json)."
+    },
+    "llm": {
+      "type": "array",
+      "description": "List of named LLM configs. Each avatar references one by name via avatar.llm.ref.",
+      "items": { "$ref": "#/$defs/llmEntry" }
+    },
+    "tts": { "$ref": "#/$defs/tts" },
+    "animations": {
+      "type": "array",
+      "description": "List of available animations (VRMA).",
+      "items": { "$ref": "#/$defs/animations" }
+    },
+    "avatars": {
+      "type": "array",
+      "description": "List of avatar definitions.",
+      "items": { "$ref": "#/$defs/avatars" }
+    },
+    "scenes": {
+      "type": "array",
+      "description": "List of scene/background definitions (2D images or HDRI environments).",
+      "items": { "$ref": "#/$defs/scene" }
+    },
+    "expressions": { "$ref": "#/$defs/expressions" },
+    "memory": { "$ref": "#/$defs/memory" },
+    "conversations": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Optional persistent conversations config. When present, conversations are stored in SQLite and survive restarts.",
+      "properties": {
+        "dbPath": { "type": "string", "description": "Path to the SQLite database file (e.g. ./data/conversations.sqlite).", "default": "./data/conversations.sqlite" }
+      }
+    }
+  },
+  "$defs": {
+    "scene": {
+      "type": "object",
+      "required": ["id", "name", "type", "path"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "description": "Unique scene ID." },
+        "name": { "type": "string", "description": "Display name." },
+        "type": { "type": "string", "enum": ["2d", "hdri"], "description": "Scene type: '2d' for a background image, 'hdri' for an environment map." },
+        "path": { "type": "string", "description": "Path to the scene file (e.g. /data/scenes/forest.jpg or /data/scenes/studio.hdr)." }
+      }
+    },
+    "memory": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Optional long-term memory: SQLite + sqlite-vec. When present, relevant past exchanges are injected into the LLM context and new exchanges are stored.",
+      "properties": {
+        "dbPath": { "type": "string", "description": "Path to the SQLite database file (e.g. ./data/memory.sqlite).", "default": "./data/memory.sqlite" },
+        "embeddingModel": { "type": "string", "description": "Embedding model name (e.g. nomic-embed-text for Ollama, text-embedding-3-small for OpenAI).", "default": "nomic-embed-text" },
+        "llmName": { "type": "string", "description": "Name of the LLM config whose provider is used for embeddings. Defaults to the first LLM config." },
+        "topK": { "type": "number", "description": "Number of relevant memories to inject into context.", "default": 5 }
+      }
+    },
+    "llmEntry": {
+      "description": "Named LLM config. The 'name' is referenced by avatar.llm.ref. The 'type' selects the provider (ollama, openai, anthropic, local).",
+      "oneOf": [
+        { "$ref": "#/$defs/llmEntryOllama" },
+        { "$ref": "#/$defs/llmEntryOpenAI" },
+        { "$ref": "#/$defs/llmEntryAnthropic" },
+        { "$ref": "#/$defs/llmEntryLocal" }
+      ]
+    },
+    "llmEntryOllama": {
+      "type": "object",
+      "required": ["name", "type"],
+      "additionalProperties": false,
+      "description": "Ollama LLM provider. Connects to a running Ollama instance via its OpenAI-compatible API.",
+      "properties": {
+        "name": { "type": "string", "description": "Unique name for this LLM. Referenced by avatar.llm.ref." },
+        "type": { "const": "ollama" },
+        "options": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "url": { "type": "string", "description": "Base URL for Ollama (e.g. http://localhost:11434)." },
+            "model": { "type": "string", "description": "Model name (e.g. llama3.1, qwen2.5)." },
+            "maxTokens": { "type": "number", "description": "Max tokens to generate." }
+          }
+        }
+      }
+    },
+    "llmEntryOpenAI": {
+      "type": "object",
+      "required": ["name", "type"],
+      "additionalProperties": false,
+      "description": "OpenAI-compatible LLM provider. Works with OpenAI, LM Studio, vLLM, or any OpenAI-compatible API.",
+      "properties": {
+        "name": { "type": "string", "description": "Unique name for this LLM. Referenced by avatar.llm.ref." },
+        "type": { "const": "openai" },
+        "options": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "url": { "type": "string", "description": "Optional base URL for OpenAI-compatible APIs (e.g. http://localhost:1234/v1 for LM Studio). Omit for real OpenAI." },
+            "apiKey": { "type": "string", "description": "API key. Can also be set via OPENAI_API_KEY env var." },
+            "model": { "type": "string", "description": "Model name (e.g. gpt-4o-mini, gpt-4o)." },
+            "maxTokens": { "type": "number", "description": "Max tokens to generate." }
+          }
+        }
+      }
+    },
+    "llmEntryAnthropic": {
+      "type": "object",
+      "required": ["name", "type"],
+      "additionalProperties": false,
+      "description": "Anthropic LLM provider. Uses Claude models via the Anthropic API.",
+      "properties": {
+        "name": { "type": "string", "description": "Unique name for this LLM. Referenced by avatar.llm.ref." },
+        "type": { "const": "anthropic" },
+        "options": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "apiKey": { "type": "string", "description": "API key. Can also be set via ANTHROPIC_API_KEY env var." },
+            "model": { "type": "string", "description": "Model name (e.g. claude-sonnet-4-6, claude-haiku-4-5-20251001)." },
+            "maxTokens": { "type": "number", "description": "Max tokens to generate." }
+          }
+        }
+      }
+    },
+    "llmEntryLocal": {
+      "type": "object",
+      "required": ["name", "type"],
+      "additionalProperties": false,
+      "description": "Local LLM via Transformers.js. Runs ONNX models in-process, no external service needed.",
+      "properties": {
+        "name": { "type": "string", "description": "Unique name for this LLM. Referenced by avatar.llm.ref." },
+        "type": { "const": "local" },
+        "options": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "model": { "type": "string", "description": "HuggingFace model ID (e.g. onnx-community/Llama-3.2-1B-Instruct)." },
+            "maxTokens": { "type": "number", "description": "Max tokens to generate." }
+          }
+        }
+      }
+    },
+    "tts": {
+      "type": "array",
+      "description": "List of named TTS configs. Each avatar references one by name via avatar.tts.ref.",
+      "items": { "$ref": "#/$defs/ttsEntry" }
+    },
+    "ttsEntry": {
+      "description": "Named TTS config. The 'name' is referenced by avatar.tts.ref. The 'type' selects the provider (openai, elevenlabs, local, sirene).",
+      "oneOf": [
+        { "$ref": "#/$defs/ttsEntryOpenAI" },
+        { "$ref": "#/$defs/ttsEntryElevenLabs" },
+        { "$ref": "#/$defs/ttsEntryLocal" },
+        { "$ref": "#/$defs/ttsEntrySirene" }
+      ]
+    },
+    "ttsEntryOpenAI": {
+      "type": "object",
+      "required": ["name", "type"],
+      "additionalProperties": false,
+      "description": "OpenAI TTS provider. Uses OpenAI's text-to-speech API.",
+      "properties": {
+        "name": { "type": "string", "description": "Unique name for this TTS. Referenced by avatar.tts.ref." },
+        "type": { "const": "openai" },
+        "options": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "apiKey": { "type": "string", "description": "API key. Can also be set via OPENAI_API_KEY env var." },
+            "model": { "type": "string", "description": "TTS model (e.g. tts-1, tts-1-hd)." },
+            "voice": { "type": "string", "description": "Voice name (e.g. alloy, echo, fable, onyx, nova, shimmer)." },
+            "speed": { "type": "number", "description": "Speed multiplier (0.25 to 4.0)." }
+          }
+        }
+      }
+    },
+    "ttsEntryElevenLabs": {
+      "type": "object",
+      "required": ["name", "type"],
+      "additionalProperties": false,
+      "description": "ElevenLabs TTS provider. Uses ElevenLabs' text-to-speech API.",
+      "properties": {
+        "name": { "type": "string", "description": "Unique name for this TTS. Referenced by avatar.tts.ref." },
+        "type": { "const": "elevenlabs" },
+        "options": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "apiKey": { "type": "string", "description": "API key. Can also be set via ELEVENLABS_API_KEY env var." },
+            "model": { "type": "string", "description": "Model name (e.g. eleven_multilingual_v2)." },
+            "voice": { "type": "string", "description": "Voice name or ID." }
+          }
+        }
+      }
+    },
+    "ttsEntryLocal": {
+      "type": "object",
+      "required": ["name", "type"],
+      "additionalProperties": false,
+      "description": "Local TTS via Transformers.js. Runs ONNX models in-process, no external service needed.",
+      "properties": {
+        "name": { "type": "string", "description": "Unique name for this TTS. Referenced by avatar.tts.ref." },
+        "type": { "const": "local" },
+        "options": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "model": { "type": "string", "description": "HuggingFace model ID (e.g. Xenova/speecht5_tts)." },
+            "voice": { "type": "string", "description": "Voice name (model-specific)." },
+            "speed": { "type": "number", "description": "Speed multiplier." }
+          }
+        }
+      }
+    },
+    "ttsEntrySirene": {
+      "type": "object",
+      "required": ["name", "type"],
+      "additionalProperties": false,
+      "description": "Sirene TTS provider. Routes to multiple backends (Kokoro, Piper, F5-TTS, etc.) via a Sirene instance.",
+      "properties": {
+        "name": { "type": "string", "description": "Unique name for this TTS. Referenced by avatar.tts.ref." },
+        "type": { "const": "sirene" },
+        "options": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "baseUrl": { "type": "string", "description": "Sirene server base URL (e.g. http://localhost:3000)." },
+            "voice": { "type": "string", "description": "Voice ID configured in Sirene." },
+            "speed": { "type": "number", "description": "Speed multiplier." }
+          }
+        }
+      }
+    },
+    "animations": {
+      "type": "object",
+      "required": ["id", "label"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "description": "Unique animation ID." },
+        "url": { "type": "string", "description": "URL to the VRMA file. Optional: defaults to /data/animations/{id}.vrma." },
+        "label": { "type": "string", "description": "Display label in the UI." }
+      }
+    },
+    "avatars": {
+      "type": "object",
+      "required": ["id", "name", "outfits"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "description": "Unique avatar ID." },
+        "name": { "type": "string", "description": "Display name." },
+        "animations": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Per-avatar animation settings. All fields optional.",
+          "properties": {
+            "available": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "IDs of animations available for this avatar. When omitted, all global animations are available."
+            },
+            "idle": { "type": "string", "description": "Animation ID to play as idle/rest loop after appearing." },
+            "appearing": { "type": "string", "description": "Animation ID to play as intro when the avatar appears." },
+            "expressionMapping": {
+              "type": "object",
+              "additionalProperties": { "type": "string" },
+              "description": "Mapping from expression/emotion name to animation ID."
+            },
+            "idlePool": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Animation IDs for random idle behaviors (e.g. look around, yawn)."
+            },
+            "idleMinInterval": {
+              "type": "number",
+              "minimum": 1,
+              "description": "Minimum seconds between idle behaviors. Default 8."
+            },
+            "idleMaxInterval": {
+              "type": "number",
+              "minimum": 1,
+              "description": "Maximum seconds between idle behaviors. Default 20."
+            }
+          }
+        },
+        "scene": { "type": "string", "description": "ID of the scene/background to use for this avatar. References scenes[].id." },
+        "systemPrompt": { "type": "string", "description": "Deprecated: use llm.overrides.systemPrompt." },
+        "llm": { "$ref": "#/$defs/avatarLlm" },
+        "tts": { "$ref": "#/$defs/avatarTtsRef" },
+        "speechRecognition": { "$ref": "#/$defs/speechRecognition" },
+        "outfits": {
+          "type": "array",
+          "minItems": 1,
+          "description": "Outfit variants. Each entry has its own VRM modelPath. One entry should have \"default\": true.",
+          "items": { "$ref": "#/$defs/outfit" }
+        }
+      }
+    },
+    "outfit": {
+      "type": "object",
+      "required": ["id", "label", "modelPath"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "description": "Unique outfit ID." },
+        "label": { "type": "string", "description": "Display label in the UI." },
+        "modelPath": { "type": "string", "description": "URL to the VRM model for this outfit." },
+        "default": { "type": "boolean", "description": "When true, this outfit is selected by default." }
+      }
+    },
+    "avatarLlm": {
+      "type": "object",
+      "required": ["ref"],
+      "additionalProperties": false,
+      "description": "LLM config for this avatar. Reference to a named LLM entry with optional per-avatar overrides.",
+      "properties": {
+        "ref": { "type": "string", "description": "Name of the LLM config from the root llm array (e.g. 'ollama')." },
+        "overrides": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Per-avatar overrides: systemPrompt, model (overrides the LLM's default model for this avatar).",
+          "properties": {
+            "systemPrompt": { "type": "string" },
+            "model": { "type": "string" }
+          }
+        },
+        "memory": { "type": "boolean", "description": "When global memory is configured, set to false to disable memory for this avatar. Omit or true to enable." }
+      }
+    },
+    "avatarTtsRef": {
+      "type": "object",
+      "required": ["ref"],
+      "additionalProperties": false,
+      "description": "Reference to a root tts entry by ref. When omitted, no speech synthesis. Per-avatar overrides for voice, model, and speed.",
+      "properties": {
+        "ref": { "type": "string", "description": "Name of the TTS config from the root tts array." },
+        "overrides": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "voice": { "type": "string", "description": "Voice name (optional override)." },
+            "model": { "type": "string", "description": "Model name (optional override)." },
+            "speed": { "type": "number", "description": "Speed multiplier (optional override)." }
+          }
+        }
+      }
+    },
+    "speechRecognition": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "hintWords": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Words/phrases to improve recognition (e.g. character names)."
+        },
+        "restartOnEndDelayMs": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Delay in ms before restarting recognition after the browser ends a phrase, so the mic stays on longer (e.g. 1200)."
+        }
+      }
+    },
+    "expressions": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Expression parsing: valid expression IDs and mapping from LLM emotion tags to those IDs.",
+      "properties": {
+        "valid": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "List of valid expression IDs (e.g. happy, sad, neutral). LLM tags matching these are used as-is."
+        },
+        "emotionMapping": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Map custom emotion names (e.g. smile, blush) to a valid expression ID."
+        }
+      }
+    }
+  }
+}

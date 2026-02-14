@@ -1,0 +1,43 @@
+{
+  "name": "template",
+  "version": "0.4.0",
+  "description": "A monorepo template built with Bun, Hono, Vite, and React",
+  "author": "Steve Simkins",
+  "license": "MIT",
+  "homepage": "https://github.com/stevedylandev/bhvr",
+  "packageManager": "bun@1.2.4",
+  "workspaces": ["./server", "./client", "./shared", "./docs"],
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "biome lint .",
+    "type-check": "turbo type-check",
+    "test": "turbo test",
+    "format": "biome format . --write",
+    "docs:dev": "bun run --cwd docs dev",
+    "docs:build": "bun run --cwd docs build"
+  },
+  "keywords": ["bun", "hono", "react", "vite", "monorepo", "turbo"],
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.5",
+    "@gltf-transform/core": "^4.3.0",
+    "@gltf-transform/extensions": "^4.3.0",
+    "@gltf-transform/functions": "^4.3.0",
+    "@tanstack/react-query": "^5.90.21",
+    "bun-types": "latest",
+    "sharp": "^0.34.5",
+    "turbo": "^2.8.13",
+    "vite-plugin-pwa": "^1.2.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.58",
+    "@ai-sdk/elevenlabs": "^2.0.24",
+    "ajv": "^8.18.0"
+  },
+  "overrides": {
+    "@emnapi/core": "1.4.3"
+  }
+}

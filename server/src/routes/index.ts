@@ -1,0 +1,12 @@
+export { animationRoutes as animationsRoutes } from './animation.routes';
+export { avatarRoutes } from './avatar.routes';
+export { avatarArchiveRoutes } from './avatar-archive.routes';
+export { chatRoutes } from './chat.routes';
+export { configRoutes } from './config.routes';
+export { conversationsRoutes } from './conversations.routes';
+export { filesRoutes } from './files.routes';
+export { healthRoutes } from './health.routes';
+export { llmRoutes } from './llm.routes';
+export { memoryRoutes } from './memory.routes';
+export { sceneRoutes } from './scene.routes';
+export { ttsRoutes } from './tts.routes';

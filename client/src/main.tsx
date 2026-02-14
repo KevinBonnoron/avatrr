@@ -1,0 +1,52 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { createRouter, RouterProvider } from '@tanstack/react-router';
+import { StrictMode } from 'react';
+import ReactDOM from 'react-dom/client';
+import '@/i18n';
+import './index.css';
+
+// Suppress known library deprecation warnings (Three.js, react-three-fiber, three-vrm) in dev
+if (import.meta.env.DEV) {
+  const originalWarn = console.warn;
+  const skipPatterns = ['THREE.Clock', 'THREE.Timer', 'PCFSoftShadowMap', 'PCFShadowMap', 'LookAtDegreeMap'];
+  console.warn = (...args: unknown[]) => {
+    const msg = typeof args[0] === 'string' ? args[0] : String(args[0]);
+    if (skipPatterns.some((p) => msg.includes(p))) {
+      return;
+    }
+    originalWarn.apply(console, args);
+  };
+}
+
+// Import the generated route tree
+import { routeTree } from './routeTree.gen';
+
+// Create a new router instance
+const router = createRouter({ routeTree });
+
+// Register the router instance for type safety
+declare module '@tanstack/react-router' {
+  interface Register {
+    router: typeof router;
+  }
+}
+
+const queryClient = new QueryClient();
+
+const rootElement = document.getElementById('root');
+
+if (!rootElement) {
+  throw new Error("Root element not found. Check if it's in your index.html or if the id is correct.");
+}
+
+// Render the app
+if (!rootElement.innerHTML) {
+  const root = ReactDOM.createRoot(rootElement);
+  root.render(
+    <StrictMode>
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>
+    </StrictMode>,
+  );
+}

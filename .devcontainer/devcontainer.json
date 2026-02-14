@@ -1,0 +1,13 @@
+{
+  "name": "Avatrr",
+  "image": "ghcr.io/nhaef/devcontainer-bun:latest",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "Anthropic.claude-code",
+        "biomejs.biome",
+        "github.vscode-github-actions"
+      ]
+    }
+  }
+}

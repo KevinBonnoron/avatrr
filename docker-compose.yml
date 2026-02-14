@@ -1,0 +1,14 @@
+---
+services:
+  avatrr:
+    image: ghcr.io/kevinbonnoron/avatrr:main
+    container_name: avatrr
+    network_mode: bridge
+    ports:
+      - "${AVATRR_PORT:-80}:80"
+    volumes:
+      - ./config.jsonc:/app/config.jsonc
+      - ./data:/data
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
